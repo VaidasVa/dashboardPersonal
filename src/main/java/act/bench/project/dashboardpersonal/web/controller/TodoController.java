@@ -10,6 +10,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/todo")
+@CrossOrigin(origins = "${react.server}")
 public class TodoController {
 
     private final TodoService service;
@@ -28,8 +29,10 @@ public class TodoController {
         service.saveTodo(todo);
     }
 
+
     @GetMapping("/{content}")
     public Optional<List<Todo>> getByContent(@PathVariable String content) {
+        System.out.println(service.findByContent(content).get().get(0).getId());
         return service.findByContent(content);
     }
 
