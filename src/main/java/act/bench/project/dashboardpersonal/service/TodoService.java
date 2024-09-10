@@ -9,12 +9,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class TodoService {
 
     private final TodoRepository repository;
-    private final ModelMapper modelMapper = new ModelMapper();
+    private final ModelMapper mapper = new ModelMapper();
 
     public TodoService(TodoRepository repository) {
         this.repository = repository;
@@ -25,9 +27,44 @@ public class TodoService {
         List<Todo> todoList = new ArrayList<>();
 
         for (TodoDAO todoDAO : todos) {
-            todoList.add(modelMapper.map(todoDAO, Todo.class));
+            todoList.add(mapper.map(todoDAO, Todo.class));
         }
         return todoList;
+    }
+
+    public void saveTodo(Todo todo) {
+        repository.save(mapper.map(todo, TodoDAO.class));
+    }
+
+    public Optional<List<Todo>> findByContent(String title) {
+        Optional<List<TodoDAO>> todoDAOs = repository.findAllByContent(title);
+        List<Todo> todoList = new ArrayList<>();
+        todoDAOs.ifPresent(items -> items.forEach(item -> {todoList.add(mapper.map(item, Todo.class));}));
+
+        return Optional.of(todoList);
+    }
+
+    public Todo amendTodo(UUID id, Todo todo) {
+        if (id.toString().equals(todo.getId().toString())) {
+            TodoDAO todoDAO = repository.findById(id).get();
+
+            if (!todo.getContent().equals(todoDAO.getContent())) {
+                todoDAO.setContent(todo.getContent());
+            } else if (!todo.isStatus() == todoDAO.isStatus()) {
+                todoDAO.setStatus(todo.isStatus());
+            } else if (!todo.isArchived() == todoDAO.isArchived()) {
+                todoDAO.setArchived(todo.isArchived());
+            }
+            repository.save(todoDAO);
+        }
+
+        return mapper.map(repository.findById(id).get(), Todo.class);
+    }
+
+    public void deleteTodo(UUID id) {
+        if (repository.existsById(id)) {
+            repository.deleteById(id);
+        }
     }
 
 }
