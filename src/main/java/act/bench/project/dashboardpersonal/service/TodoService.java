@@ -7,10 +7,10 @@ import act.bench.project.dashboardpersonal.repository.dao.TodoDAO;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class TodoService {
@@ -29,7 +29,12 @@ public class TodoService {
         for (TodoDAO todoDAO : todos) {
             todoList.add(mapper.map(todoDAO, Todo.class));
         }
-        return todoList;
+        List<Todo> sortedList = todoList.stream()
+                .sorted(Comparator.comparing(Todo::getUpdated))
+                .sorted(Comparator.comparing(Todo::getCreated))
+                .collect(Collectors.toList());
+
+        return sortedList;
     }
 
     public void saveTodo(Todo todo) {
@@ -44,11 +49,11 @@ public class TodoService {
         return Optional.of(todoList);
     }
 
-    public Todo amendTodo(UUID id, Todo todo) {
-        if (id.toString().equals(todo.getId().toString())) {
-            TodoDAO todoDAO = repository.findById(id).get();
+    public Todo amendTodo(String id, Todo todo) {
+        if (id.equals(todo.getId().toString())) {
+            TodoDAO todoDAO = repository.findById(UUID.fromString(id)).get();
 
-            if (!todo.getContent().equals(todoDAO.getContent())) {
+            if (todo.getContent()!=null && !todo.getContent().equals(todoDAO.getContent())) {
                 todoDAO.setContent(todo.getContent());
             } else if (!todo.isStatus() == todoDAO.isStatus()) {
                 todoDAO.setStatus(todo.isStatus());
@@ -58,7 +63,7 @@ public class TodoService {
             repository.save(todoDAO);
         }
 
-        return mapper.map(repository.findById(id).get(), Todo.class);
+        return mapper.map(repository.findById(UUID.fromString(id)).get(), Todo.class);
     }
 
     public void deleteTodo(UUID id) {
